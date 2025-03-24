@@ -1,0 +1,35 @@
+#include <stdint.h>
+#include <stdio.h>
+
+#define BMP_MAGIC_NUMBER 0x4d42  // "BM" in ASCII
+#define BMP_PLANES 1
+#define BMP_BIT_COUNT 24
+#define BMP_COMPRESSION 0
+
+typedef struct {
+    uint16_t signature;   // BMP_MAGIC_NUMBER = "BM"
+    uint32_t file_size;   // entire size of file
+    uint16_t reserved1;   // must be zero
+    uint16_t reserved2;   // must be zero
+    uint32_t data_offet;  // offset of pixel data
+} BMPFileHeader;
+
+typedef struct {
+    uint32_t size;         // this header size (40 bytes)
+    int32_t width;         // image width in pixels
+    int32_t height;        // image height in pixels
+    uint16_t planes;       // must be 1
+    uint16_t bit_count;    // bits per pixel
+    uint32_t compression;  // compression method
+    uint32_t image_size;   // pixel data size
+
+    // unused fields set to zero
+    int32_t x_res;
+    int32_t y_res;
+    uint32_t colors_used;
+    uint32_t important_colors;
+} BMPInfoHeader;
+
+int main() {
+    printf("Hello, World!\n");
+}
