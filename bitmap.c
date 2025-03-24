@@ -1,5 +1,7 @@
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define BMP_MAGIC_NUMBER 0x4d42  // "BM" in ASCII
 #define BMP_PLANES 1
@@ -30,6 +32,49 @@ typedef struct {
     uint32_t important_colors;
 } BMPInfoHeader;
 
+// The color data should really just be a RGB struct,
+// but I want to experiment with bitwise operations!
+typedef uint32_t Color;
+
+typedef struct {
+    int width;
+    int height;
+    Color *pixels;
+} Bitmap;
+
+Bitmap *bitmap_init(int width, int height) {
+    if (width <= 0 || height <= 0) {
+        fprintf(stderr, "ERROR: bitmap width/height must be > 0\n");
+        exit(EXIT_FAILURE);
+    }
+    if (width > INT32_MAX || height > INT32_MAX) {
+        fprintf(stderr, "ERROR: bitmap width/height is too large\n");
+        exit(EXIT_FAILURE);
+    }
+
+    Bitmap *bitmap = malloc(sizeof(Bitmap));
+    if (bitmap == NULL) {
+        fprintf(stderr, "ERROR: out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+    bitmap->width = width;
+    bitmap->height = height;
+
+    bitmap->pixels = malloc(sizeof(Color) * width * height);
+    if (bitmap->pixels == NULL) {
+        fprintf(stderr, "ERROR: out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return bitmap;
+}
+
 int main() {
-    printf("Hello, World!\n");
+    int width = 10;
+    int height = 10;
+    Bitmap *bitmap = bitmap_init(width, height);
+
+    printf("Initialized %dx%d bitmap\n", bitmap->width, bitmap->height);
+
+    return EXIT_SUCCESS;
 }
