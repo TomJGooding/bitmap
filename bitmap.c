@@ -69,12 +69,24 @@ Bitmap *bitmap_init(int width, int height) {
     return bitmap;
 }
 
+void bitmap_free(Bitmap *bitmap) {
+    if (bitmap == NULL || bitmap->pixels == NULL) {
+        fprintf(stderr, "ERROR: attempt to free uninitialized bitmap\n");
+        exit(EXIT_FAILURE);
+    }
+    free(bitmap->pixels);
+    bitmap->pixels = NULL;
+    free(bitmap);
+}
+
 int main() {
     int width = 10;
     int height = 10;
     Bitmap *bitmap = bitmap_init(width, height);
 
     printf("Initialized %dx%d bitmap\n", bitmap->width, bitmap->height);
+
+    bitmap_free(bitmap);
 
     return EXIT_SUCCESS;
 }
