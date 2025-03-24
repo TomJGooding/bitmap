@@ -8,6 +8,9 @@
 #define BMP_BIT_COUNT 24
 #define BMP_COMPRESSION 0
 
+// Pack header structs to ensure correct byte alignment for file output
+#pragma pack(push, 1)
+
 typedef struct {
     uint16_t signature;   // BMP_MAGIC_NUMBER = "BM"
     uint32_t file_size;   // entire size of file
@@ -31,6 +34,12 @@ typedef struct {
     uint32_t colors_used;
     uint32_t important_colors;
 } BMPInfoHeader;
+
+#pragma pack(pop)
+
+#define BMP_FILEHEADER_SIZE (sizeof(BMPFileHeader))
+#define BMP_INFOHEADER_SIZE (sizeof(BMPInfoHeader))
+#define BMP_HEADER_SIZE (BMP_FILEHEADER_SIZE + BMP_INFOHEADER_SIZE)
 
 // The color data should really just be a RGB struct,
 // but I want to experiment with bitwise operations!
@@ -79,12 +88,71 @@ void bitmap_free(Bitmap *bitmap) {
     free(bitmap);
 }
 
+void bitmap_save(Bitmap *bitmap, const char *filename) {
+    if (bitmap == NULL || bitmap->pixels == NULL) {
+        fprintf(stderr, "ERROR: attempt to save uninitialized bitmap\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Each pixel data row must be padded to be a multiple of 4 bytes long
+    int row_length = 4 * ((bitmap->width * BMP_BIT_COUNT + 31) / 32);
+
+    // TODO: handle huge size overflow
+    int image_size = row_length * bitmap->height;
+    int file_size = BMP_HEADER_SIZE + image_size;
+
+    BMPFileHeader file_header = {
+        .signature = BMP_MAGIC_NUMBER,
+        .file_size = file_size,
+        .reserved1 = 0,
+        .reserved2 = 0,
+        .data_offet = BMP_HEADER_SIZE
+    };
+
+    BMPInfoHeader info_header = {
+        .size = BMP_INFOHEADER_SIZE,
+        .width = bitmap->width,
+        .height = bitmap->height,
+        .planes = BMP_PLANES,
+        .bit_count = BMP_BIT_COUNT,
+        .compression = BMP_COMPRESSION,
+        .image_size = image_size,
+        .x_res = 0,
+        .y_res = 0,
+        .colors_used = 0,
+        .important_colors = 0
+    };
+
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        fprintf(stderr, "ERROR: failed to open file '%s'\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    if (!fwrite(&file_header, BMP_FILEHEADER_SIZE, 1, file) ||
+        !fwrite(&info_header, BMP_INFOHEADER_SIZE, 1, file)) {
+        fprintf(stderr, "ERROR: failed to write to file '%s'\n", filename);
+        exit(EXIT_FAILURE);
+    };
+
+    // TODO: Write the bitmap pixel data
+    uint32_t red_pixel = 0xFF0000;
+    if (!fwrite(&red_pixel, sizeof(red_pixel), 1, file)) {
+        fprintf(stderr, "ERROR: failed to write to file '%s'\n", filename);
+        exit(EXIT_FAILURE);
+    };
+
+    fclose(file);
+}
+
 int main() {
-    int width = 10;
-    int height = 10;
+    int width = 1;
+    int height = 1;
     Bitmap *bitmap = bitmap_init(width, height);
 
-    printf("Initialized %dx%d bitmap\n", bitmap->width, bitmap->height);
+    char *filename = "out.bmp";
+    bitmap_save(bitmap, filename);
+    printf("Saved bitmap image to '%s'\n", filename);
 
     bitmap_free(bitmap);
 
