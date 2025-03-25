@@ -145,10 +145,34 @@ void bitmap_save(Bitmap *bitmap, const char *filename) {
     fclose(file);
 }
 
+void bitmap_set_pixel(Bitmap *bitmap, int x, int y, Color color) {
+    if (bitmap == NULL || bitmap->pixels == NULL) {
+        fprintf(
+            stderr, "ERROR: attempt to set pixel in uninitialized bitmap\n"
+        );
+        exit(EXIT_FAILURE);
+    }
+    if (x < 0 || y < 0) {
+        fprintf(stderr, "ERROR: Pixel coordinates must be non-negative\n");
+        exit(EXIT_FAILURE);
+    }
+    if (x >= bitmap->width || y >= bitmap->height) {
+        fprintf(stderr, "ERROR: Pixel coordinate is out of range\n");
+        exit(EXIT_FAILURE);
+    }
+
+    bitmap->pixels[y * bitmap->width + x] = color;
+}
+
 int main() {
-    int width = 1;
-    int height = 1;
+    int width = 2;
+    int height = 2;
     Bitmap *bitmap = bitmap_init(width, height);
+
+    bitmap_set_pixel(bitmap, 0, 0, 0x0000FF);
+    bitmap_set_pixel(bitmap, 0, 1, 0x00FF00);
+    bitmap_set_pixel(bitmap, 1, 0, 0xFF0000);
+    bitmap_set_pixel(bitmap, 1, 1, 0xFFFFFF);
 
     char *filename = "out.bmp";
     bitmap_save(bitmap, filename);
