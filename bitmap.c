@@ -186,17 +186,53 @@ void bitmap_set_pixel(Bitmap *bitmap, int x, int y, Color color) {
     bitmap->pixels[y * bitmap->width + x] = color;
 }
 
+void bitmap_fill_rect(
+    Bitmap *bitmap, int x, int y, int width, int height, Color color
+) {
+    if (bitmap == NULL || bitmap->pixels == NULL) {
+        fprintf(
+            stderr, "ERROR: attempt to fill pixels in uninitialized bitmap\n"
+        );
+        exit(EXIT_FAILURE);
+    }
+    if (x < 0 || y < 0) {
+        fprintf(stderr, "ERROR: Starting coordinate must be non-negative\n");
+        exit(EXIT_FAILURE);
+    }
+    if (x >= bitmap->width || y >= bitmap->height) {
+        fprintf(stderr, "ERROR: Starting coordinate is out of range\n");
+        exit(EXIT_FAILURE);
+    }
+    // TODO: allow negative width/height values to draw rectangles left/up
+    if (width < 0 || height < 0) {
+        fprintf(stderr, "ERROR: Rectangle width/height must be non-negative\n");
+        exit(EXIT_FAILURE);
+    }
+    int max_dx = x + width;
+    int max_dy = y + height;
+    if (max_dx > bitmap->width || max_dy > bitmap->height) {
+        fprintf(stderr, "ERROR: Rectangle width/height is out of range\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int dy = y; dy < max_dy; dy++) {
+        for (int dx = x; dx < max_dx; dx++) {
+            bitmap_set_pixel(bitmap, dx, dy, color);
+        }
+    }
+}
+
 int main() {
-    int width = 2;
-    int height = 2;
+    int width = 30;
+    int height = 20;
     Bitmap *bitmap = bitmap_init(width, height);
 
-    bitmap_set_pixel(bitmap, 0, 0, 0x0000FF);
-    bitmap_set_pixel(bitmap, 0, 1, 0x00FF00);
-    bitmap_set_pixel(bitmap, 1, 0, 0xFF0000);
-    bitmap_set_pixel(bitmap, 1, 1, 0xFFFFFF);
+    int band_width = width / 3;
+    bitmap_fill_rect(bitmap, 0 * band_width, 0, band_width, height, 0x000091);
+    bitmap_fill_rect(bitmap, 1 * band_width, 0, band_width, height, 0xFFFFFF);
+    bitmap_fill_rect(bitmap, 2 * band_width, 0, band_width, height, 0xE1000F);
 
-    char *filename = "out.bmp";
+    char *filename = "france.bmp";
     bitmap_save(bitmap, filename);
     printf("Saved bitmap image to '%s'\n", filename);
 
