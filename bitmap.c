@@ -96,6 +96,8 @@ void bitmap_save(Bitmap *bitmap, const char *filename) {
 
     // Each pixel data row must be padded to be a multiple of 4 bytes long
     int row_length = 4 * ((bitmap->width * BMP_BIT_COUNT + 31) / 32);
+    int padding_length = row_length - (bitmap->width * 3);
+    uint8_t padding_byte = 0;
 
     // TODO: handle huge size overflow
     int image_size = row_length * bitmap->height;
@@ -135,12 +137,32 @@ void bitmap_save(Bitmap *bitmap, const char *filename) {
         exit(EXIT_FAILURE);
     };
 
-    // TODO: Write the bitmap pixel data
-    uint32_t red_pixel = 0xFF0000;
-    if (!fwrite(&red_pixel, sizeof(red_pixel), 1, file)) {
-        fprintf(stderr, "ERROR: failed to write to file '%s'\n", filename);
-        exit(EXIT_FAILURE);
-    };
+    // Pixels are stored "bottom-up", starting in the lower left corner
+    for (int y = bitmap->height - 1; y >= 0; y--) {
+        for (int x = 0; x < bitmap->width; x++) {
+            Color pixel_color = bitmap->pixels[y * bitmap->width + x];
+            uint8_t red = (pixel_color & 0xFF0000) >> 16;
+            uint8_t green = (pixel_color & 0x00FF00) >> 8;
+            uint8_t blue = (pixel_color & 0x0000FF);
+            // Colors are stored in BGR order
+            if (!fwrite(&blue, sizeof(blue), 1, file) ||
+                !fwrite(&green, sizeof(green), 1, file) ||
+                !fwrite(&red, sizeof(red), 1, file)) {
+                fprintf(
+                    stderr, "ERROR: failed to write to file '%s'\n", filename
+                );
+                exit(EXIT_FAILURE);
+            };
+        }
+        for (int i = 0; i < padding_length; i++) {
+            if (!fwrite(&padding_byte, sizeof(padding_byte), 1, file)) {
+                fprintf(
+                    stderr, "ERROR: failed to write to file '%s'\n", filename
+                );
+                exit(EXIT_FAILURE);
+            };
+        }
+    }
 
     fclose(file);
 }
